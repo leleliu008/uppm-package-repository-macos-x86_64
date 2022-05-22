@@ -60,6 +60,8 @@ do
         core/bin/sqlite3)
             run $item --version
             ;;
+        core/bin/updatedb)
+	    ;;
         *)
             run $item --help
             run $item --version
