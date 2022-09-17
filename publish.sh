@@ -2,6 +2,8 @@
 
 set -e
 
+######################################## util #########################################
+
 COLOR_RED='\033[0;31m'          # Red
 COLOR_GREEN='\033[0;32m'        # Green
 COLOR_YELLOW='\033[0;33m'       # Yellow
@@ -26,91 +28,130 @@ die_if_command_not_found() {
     done
 }
 
-die_if_command_not_found tar gzip git gh tar xz
+sed_in_place() {
+    if command -v gsed > /dev/null ; then
+        unset SED_IN_PLACE_ACTION
+        SED_IN_PLACE_ACTION="$1"
+        shift
+        # contains ' but not contains \'
+        if printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" " "' | grep -q 27 && ! printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" ""' | grep -q '5C 27' ; then
+            run gsed -i "\"$SED_IN_PLACE_ACTION\"" $@
+        else
+            run gsed -i "'$SED_IN_PLACE_ACTION'" $@
+        fi
+    elif command -v sed  > /dev/null ; then
+        if sed -i 's/a/b/g' $(mktemp) 2> /dev/null ; then
+            unset SED_IN_PLACE_ACTION
+            SED_IN_PLACE_ACTION="$1"
+            shift
+            if printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" " "' | grep -q 27 && ! printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" ""' | grep -q '5C 27' ; then
+                run sed -i "\"$SED_IN_PLACE_ACTION\"" $@
+            else
+                run sed -i "'$SED_IN_PLACE_ACTION'" $@
+            fi
+        else
+            unset SED_IN_PLACE_ACTION
+            SED_IN_PLACE_ACTION="$1"
+            shift
+            if printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" " "' | grep -q 27 && ! printf "$SED_IN_PLACE_ACTION" | hexdump -v -e '1/1 "%02X" ""' | grep -q '5C 27' ; then
+                run sed -i '""' "\"$SED_IN_PLACE_ACTION\"" $@
+            else
+                run sed -i '""' "'$SED_IN_PLACE_ACTION'" $@
+            fi
+        fi
+    else
+        error "please install sed utility."
+        return 1
+    fi
+}
+
+######################################## main #########################################
+
+die_if_command_not_found tar gzip xz gh sed grep hexdump date sha256sum
 
 run cd "$(dirname "$0")"
 
 run pwd
 
-unset TEMP_DIR
-unset OUTPUT_DIR
+
+if [ -d ppkg-formula-repository/.git ] ; then
+    cd  ppkg-formula-repository
+    gh repo sync
+    cd -
+else
+    gh repo clone leleliu008/ppkg-formula-repository
+fi
+
+if [ -d uppm-formula-repository-macos-x86_64/.git ] ; then
+    cd  uppm-formula-repository-macos-x86_64
+    gh repo sync
+    cd -
+else
+    gh repo clone leleliu008/uppm-formula-repository-macos-x86_64
+fi
 
 unset RELEASE_VERSION
-unset RELEASE_TARFILE
 
 RELEASE_VERSION="$(date +%Y.%m.%d)"
+RELEASE_NOTES_FILE='release-notes.md'
 
-OUTPUT_DIR="ppkg-core-$RELEASE_VERSION-macos-x86_64"
-TEMP_DIR=$(mktemp -d)
+run cp README.md "$RELEASE_NOTES_FILE"
 
-run rm -rf     "$OUTPUT_DIR"
-run install -d "$OUTPUT_DIR"
+cat >> "$RELEASE_NOTES_FILE" <<EOF
 
-unset CORE_TOOL_BASENAME
-
-for item in *.tar.xz
-do
-    case $item in
-        openssl-*.tar.xz)
-            ;;
-        util-linux-*.tar.xz)
-            tar vxf "$item" --strip-components=1 -C "$TEMP_DIR"
-            ;;
-        gnu-coreutils-*.tar.xz)
-            tar vxf "$item" --strip-components=1 -C "$TEMP_DIR"
-            ;;
-        *)  tar vxf "$item" --strip-components=1 -C "$OUTPUT_DIR"
-            if [ -z "$CORE_TOOL_BASENAME" ] ; then
-                CORE_TOOL_BASENAME="$(basename "$item" -macos-x86_64.tar.xz)"
-            else
-                CORE_TOOL_BASENAME="$CORE_TOOL_BASENAME $(basename "$item" -macos-x86_64.tar.xz)"
-            fi
-    esac
-done
-
-for item in hexdump date sort realpath base64 md5sum sha256sum
-do
-    run cp $TEMP_DIR/bin/$item "$OUTPUT_DIR/bin/"
-done
-
-CORE_TOOL_BASENAME=$(printf '%s\n' "$CORE_TOOL_BASENAME" | tr ' ' '\n')
-
-UTILLINUX_BASENAME="$(basename util-linux-*.tar.xz    -macos-x86_64.tar.xz)"
-COREUTILS_BASENAME="$(basename gnu-coreutils-*.tar.xz -macos-x86_64.tar.xz)"
-
-cat > "$OUTPUT_DIR/README" <<EOF
-release $OUTPUT_DIR
-
-essential tools that are used by ppkg shell script.
-
-$CORE_TOOL_BASENAME
-$UTILLINUX_BASENAME/hexdump
-$COREUTILS_BASENAME/date+sort+realpath+base64+md5sum+sha256sum
-
-these tools are no any dependencies except libSystem.B.dylib.
-these tools are relocatable which means that you can installed them anywhere.
-
-following environment variables should be set for git:
-export GIT_EXEC_PATH="\$PPKG_CORE_INSTALL_DIR/libexec/git-core"
-export GIT_TEMPLATE_DIR="\$PPKG_CORE_INSTALL_DIR/share/git-core/templates"
-
-following environment variables should be set for file:
-export MAGIC="\$PPKG_CORE_INSTALL_DIR/share/misc/magic.mgc"
+|sha256sum|filename|
+|---------|--------|
 EOF
 
-run rm "$OUTPUT_DIR/installed-metadata"
-run rm "$OUTPUT_DIR/installed-files"
+for filename in $(cd package && ls *.tar.xz)
+do
+    unset PACKAGE_NAME
+    unset PACKAGE_VERSION
+    unset PACKAGE_BIN_URL
+    unset PACKAGE_BIN_SHA
+    unset PACKAGE_WEBPAGE
 
-RELEASE_TARFILE="$OUTPUT_DIR.tar.xz"
+    PACKAGE_NAME=$(printf '%s\n' "${filename%-macos-x86_64.tar.xz}" | sed 's|\(.*\)-\(.*\)|\1|')
 
-run tar vcJf "$RELEASE_TARFILE" "$OUTPUT_DIR"
+    PACKAGE_VERSION=$(printf '%s\n' "${filename%-macos-x86_64.tar.xz}" | sed 's|\(.*\)-\(.*\)|\2|')
 
-run mv "$RELEASE_TARFILE" "$OUTPUT_DIR"
+    PACKAGE_BIN_SHA=$(sha256sum "package/$filename" | cut -d ' ' -f1)
 
-run du -sh    "$OUTPUT_DIR/$RELEASE_TARFILE"
+    PACKAGE_BIN_URL="https://github.com/leleliu008/uppm-package-repository-macos-x86_64/releases/download/${RELEASE_VERSION}/${filename}"
 
-run sha256sum "$OUTPUT_DIR/$RELEASE_TARFILE"
+    UPPM_PACKAGE_FORMULA_FILEPATH="uppm-formula-repository-macos-x86_64/formula/$PACKAGE_NAME.yml"
 
-run ls "$OUTPUT_DIR"
+    if [ -f "$UPPM_PACKAGE_FORMULA_FILEPATH" ] ; then
+        sed_in_place "/version: /c version: $PACKAGE_VERSION" "$UPPM_PACKAGE_FORMULA_FILEPATH"
+        sed_in_place "/bin-url: /c bin-url: $PACKAGE_BIN_URL" "$UPPM_PACKAGE_FORMULA_FILEPATH"
+        sed_in_place "/bin-sha: /c bin-sha: $PACKAGE_BIN_SHA" "$UPPM_PACKAGE_FORMULA_FILEPATH"
+    else
+        PPKG_PACKAGE_FORMULA_FILEPATH="ppkg-formula-repository/formula/$PACKAGE_NAME.yml"
 
-run gh release create "$RELEASE_VERSION" "$OUTPUT_DIR/$RELEASE_TARFILE" "$OUTPUT_DIR/bin/curl" "$OUTPUT_DIR/bin/tar" "$OUTPUT_DIR/bin/xz" *.tar.xz --notes-file "$OUTPUT_DIR/README"
+        PACKAGE_SUMMARY=$(sed -n '/^summary: /p' "$PPKG_PACKAGE_FORMULA_FILEPATH" | cut -c10-)
+        PACKAGE_WEBPAGE=$(sed -n '/^webpage: /p' "$PPKG_PACKAGE_FORMULA_FILEPATH" | cut -c10-)
+
+        [ -z "$PACKAGE_WEBPAGE" ] &&
+        PACKAGE_WEBPAGE=$(sed -n '/^git-url: /p' "$PPKG_PACKAGE_FORMULA_FILEPATH" | cut -c10-)
+
+        cat > "$UPPM_PACKAGE_FORMULA_FILEPATH" <<EOF
+summary: $PACKAGE_SUMMARY
+webpage: $PACKAGE_WEBPAGE
+version: $PACKAGE_VERSION
+bin-url: $PACKAGE_BIN_URL
+bin-sha: $PACKAGE_BIN_SHA
+EOF
+    fi
+
+    printf '|%s|%s|\n' "$PACKAGE_BIN_SHA" "$filename" >> "$RELEASE_NOTES_FILE"
+done
+
+unset TEMP_DIR
+
+TEMP_DIR=$(mktemp -d)
+
+run tar vxf package/gtar-*-macos-x86_64.tar.xz -C "$TEMP_DIR" --strip-components=1
+run tar vxf package/gzip-*-macos-x86_64.tar.xz -C "$TEMP_DIR" --strip-components=1
+run tar vxf package/xz-*-macos-x86_64.tar.xz   -C "$TEMP_DIR" --strip-components=1
+
+run gh release create "$RELEASE_VERSION" "$TEMP_DIR/bin/tar" "$TEMP_DIR/bin/gzip" "$TEMP_DIR/bin/xz" package/*.tar.xz --notes-file "$RELEASE_NOTES_FILE"
