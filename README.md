@@ -1,4 +1,4 @@
-# ppkg-core-macos-x86_64
+# uppm-package-repository-macos-x86_64
 
 these packages are created by [ppkg](https://github.com/leleliu008/ppkg).
 
