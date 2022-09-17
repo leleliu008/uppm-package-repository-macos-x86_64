@@ -1,10 +1,10 @@
 # ppkg-core-macos-x86_64
 
-these tools are created by [ppkg](https://github.com/leleliu008/ppkg).
+these packages are created by [ppkg](https://github.com/leleliu008/ppkg).
 
-these tools have no dependencies other than `libSystem.B.dylib`.
+these packages have no dependencies other than `libSystem.B.dylib`.
 
-these tools are relocatable which means that you can install them to anywhere.
+these packages are relocatable which means that you can install them to anywhere.
 
 ## Environment Variables
 following environment variables should be set for `git`:
