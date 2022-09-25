@@ -23,6 +23,8 @@ done
 
 run core/bin/tree --dirsfirst -L 2
 
+export XMAKE_ROOT=y
+
 export GIT_EXEC_PATH="$PWD/core/libexec/git-core"
 
 export PATH="$PWD/core/bin:$PATH"
@@ -60,8 +62,94 @@ do
         core/bin/sqlite3)
             run $item --version
             ;;
-        core/bin/updatedb)
-	    ;;
+        core/bin/ninja)
+            run $item --version
+            ;;
+        core/bin/ytasm)
+            ;;
+        core/bin/ndisasm)
+            ;;
+        core/bin/rsync-ssl)
+            run $item --help
+            ;;
+        core/bin/readtags)
+            run $item --help
+            ;;
+        core/bin/optscript)
+            run $item --help
+            ;;
+        core/bin/gpgparsemail)
+            run $item --help
+            ;;
+        core/bin/strace-log-merge)
+            run $item --help
+            ;;
+        core/bin/darkhttpd)
+            run $item --help
+            ;;
+        core/bin/plink)
+            run $item --version
+            ;;
+        core/bin/pscp)
+            run $item --version
+            ;;
+        core/bin/psftp)
+            run $item --version
+            ;;
+        core/bin/mosh)
+            ;;
+        core/bin/tmux)
+            ;;
+        core/bin/unrar)
+            ;;
+        core/bin/qjs)
+            ;;
+        core/bin/qjsc)
+            ;;
+        core/bin/qjscalc)
+            ;;
+        core/bin/curlie)
+            ;;
+        core/bin/ctop)
+            run $item --help
+            run $item -v
+            ;;
+        core/bin/hugo)
+            run $item --help
+            run $item version
+            ;;
+        core/bin/youtubedr)
+            run $item --help
+            run $item version
+            ;;
+        core/bin/mpg123-strip)
+            run $item --help
+            ;;
+        core/bin/mpg123-id3dump)
+            run $item --help
+            ;;
+        core/bin/rtmpdump)
+            run $item --help
+            ;;
+        core/sbin/rtmpgw)
+            run $item --help
+            ;;
+        core/sbin/rtmpsrv)
+            ;;
+        core/sbin/rtmpsuck)
+            ;;
+        core/sbin/addgnupghome)
+            ;;
+        core/sbin/applygnupgdefaults)
+            ;;
+        core/sbin/nologin)
+            ;;
+        core/bin/zlib-flate)
+            run $item --version
+            ;;
+        core/bin/fix-qdf)
+            run $item --version
+            ;;
         *)
             run $item --help
             run $item --version
