@@ -21,6 +21,12 @@ do
     run tar vxf $item --strip-components=1 -C core
 done
 
+if [ ! -e core/sbin/true ] ; then
+    mkdir -p core/sbin
+    printf '%s\n' '#!/bin/sh' > core/sbin/true
+    chmod +x core/sbin/true
+fi
+
 run core/bin/tree --dirsfirst -L 2
 
 export XMAKE_ROOT=y
@@ -149,6 +155,26 @@ do
             ;;
         core/bin/fix-qdf)
             run $item --version
+            ;;
+        core/bin/xxd)
+            run $item --version
+            ;;
+        core/bin/bmake)
+            ;;
+        core/bin/zstdgrep)
+            ;;
+        core/bin/zipnote)
+            ;;
+        core/bin/zipsplit)
+            ;;
+        core/bin/7z)
+            run $item --help
+            ;;
+        core/bin/7za)
+            run $item --help
+            ;;
+        core/bin/7zr)
+            run $item --help
             ;;
         *)
             run $item --help
