@@ -53,8 +53,6 @@ jobs:
       - run: git commit -m "new release"
       - run: git push origin master
 
-      - run: ln -s /opt/ppkg/installed/gh/bin/gh /usr/local/bin/gh
-
       - run: printf '%s\n' "$RELEASE_TOKEN" | gh auth login --with-token
 
       - run: ./publish.sh
