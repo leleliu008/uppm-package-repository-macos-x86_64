@@ -176,6 +176,9 @@ do
         core/bin/7zr)
             run $item --help
             ;;
+        core/bin/scalar)
+            run $item version
+            ;;
         *)
             run $item --help
             run $item --version
