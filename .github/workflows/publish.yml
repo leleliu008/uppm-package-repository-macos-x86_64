@@ -20,23 +20,11 @@ jobs:
       - run: chmod a+x ppkg
       - run: ./ppkg setup --use-system-package-manager
       - run: ./ppkg update
-      - run: ./ppkg install $PKG_NAMES --link-type=static-prefered --install-lib=static
       - run: |
           for PKG_NAME in $PKG_NAMES
           do
-            if [     -d /opt/ppkg/installed/$PKG_NAME/bin ] || [ -d /opt/ppkg/installed/$PKG_NAME/sbin ] ; then
-                if [ -d /opt/ppkg/installed/$PKG_NAME/include ] ; then
-                    rm -rf               /opt/ppkg/installed/$PKG_NAME/include
-                    sed -i '/|include/d' /opt/ppkg/installed/$PKG_NAME/.ppkg/manifest.txt
-                fi
-
-                if [ -d /opt/ppkg/installed/$PKG_NAME/lib ] ; then
-                    rm -rf           /opt/ppkg/installed/$PKG_NAME/lib
-                    sed -i '/|lib/d' /opt/ppkg/installed/$PKG_NAME/.ppkg/manifest.txt
-                fi
-
-               ./ppkg pack $PKG_NAME
-            fi
+            ./ppkg install $PKG_NAME --link-type=static-prefered --install-lib=static
+            ./ppkg pack    $PKG_NAME
           done
 
       - run: git config --global --add safe.directory /__w/uppm-package-repository-macos-x86_64/uppm-package-repository-macos-x86_64
