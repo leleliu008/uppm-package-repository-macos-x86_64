@@ -2,7 +2,7 @@
 
 these packages are created by [ppkg](https://github.com/leleliu008/ppkg).
 
-these packages have no dependencies other than `libSystem.B.dylib`.
+these packages have no dependencies other than `/usr/lib/lib*.dylib` and `/System/Library/Frameworks/*.framework`.
 
 these packages are relocatable which means that you can install them to anywhere.
 
