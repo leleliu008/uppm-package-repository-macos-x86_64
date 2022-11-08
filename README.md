@@ -17,3 +17,4 @@ following environment variables should be set for `file`:
 ```bash
 export MAGIC="$PPKG_CORE_INSTALL_DIR/share/misc/magic.mgc"
 ```
+
